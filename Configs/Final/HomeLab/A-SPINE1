@@ -1,0 +1,79 @@
+! Command: show running-config
+! device: A-SPINE1 (vEOS, EOS-4.21.1F)
+!
+! boot system flash:/vEOS-lab.swi
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname A-SPINE1
+!
+spanning-tree mode mstp
+!
+no aaa root
+!
+username arista privilege 15 secret sha512 $6$oORMl5j0619AGMCM$VdmvJAn2C4CWmVZhUixaV/Ss0HVOcr2h6epSQuYLOEq4oetOx8bpWVz.5L2uG2AfxQ8Y7PFQ8UselNBDHQZiZ0
+!
+interface Ethernet1
+   description A-LEAF1A
+   no switchport
+   ip address 10.101.201.201/24
+   ip ospf network point-to-point
+   ip ospf area 0.0.0.0
+!
+interface Ethernet2
+   description A-LEAF2A
+   no switchport
+   ip address 10.102.201.201/24
+   ip ospf network point-to-point
+   ip ospf area 0.0.0.0
+!
+interface Ethernet3
+   description A-BL1A
+   no switchport
+   ip address 10.104.201.201/24
+   ip ospf network point-to-point
+   ip ospf area 0.0.0.0
+!
+interface Loopback0
+   ip address 1.1.1.201/32
+   ip ospf area 0.0.0.0
+!
+interface Management1
+   ip address 10.50.50.201/24
+!
+ip route 10.11.11.0/24 10.50.50.1
+ip route 10.155.155.0/24 10.50.50.1
+!
+ip routing
+!
+router bgp 65100
+   router-id 1.1.1.201
+   no bgp default ipv4-unicast
+   bgp listen range 1.1.1.0/24 peer-group LEAF-PEERS remote-as 65100
+   neighbor LEAF-PEERS peer-group
+   neighbor LEAF-PEERS remote-as 65100
+   neighbor LEAF-PEERS update-source Loopback0
+   neighbor LEAF-PEERS route-reflector-client
+   neighbor LEAF-PEERS send-community extended
+   neighbor LEAF-PEERS maximum-routes 12000 
+   neighbor 2.2.2.201 remote-as 65200
+   neighbor 2.2.2.201 update-source Loopback0
+   neighbor 2.2.2.201 ebgp-multihop 10
+   neighbor 2.2.2.201 send-community extended
+   neighbor 2.2.2.201 maximum-routes 12000 
+   !
+   address-family evpn
+      neighbor LEAF-PEERS activate
+      neighbor 2.2.2.201 activate
+!
+router ospf 100
+   router-id 1.1.1.201
+   network 1.1.1.0/24 area 0.0.0.0
+   max-lsa 12000
+!
+management api http-commands
+   no shutdown
+!
+end

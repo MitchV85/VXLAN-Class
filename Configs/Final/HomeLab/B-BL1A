@@ -1,0 +1,117 @@
+! Command: show running-config
+! device: B-BL1A (vEOS, EOS-4.21.1F)
+!
+! boot system flash:/vEOS-lab.swi
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname B-BL1A
+!
+spanning-tree mode mstp
+!
+no aaa root
+!
+username arista privilege 15 secret sha512 $6$E9bH8FbpOT6p5fXw$.YzrNOsz6gxkAImVagjGszhztv/0wzLq5.dTycFT24i7sWUK.W01AUSZmHwx8.4zzVJvbF1AXs7DmoSAj58Wk/
+!
+vrf definition RED
+!
+interface Ethernet1
+   description B-SPINE1
+   no switchport
+   ip address 20.104.201.104/24
+   ip ospf network point-to-point
+   ip ospf area 0.0.0.0
+!
+interface Ethernet2
+   description CORE
+   no switchport
+!
+interface Ethernet2.100
+   description CORE VRF:RED
+   encapsulation dot1q vlan 100
+   vrf forwarding RED
+   ip address 172.16.1.2/24
+!
+interface Ethernet2.300
+   description CORE VRF:DEFAULT
+   encapsulation dot1q vlan 300
+   ip address 172.16.3.2/24
+!
+interface Loopback0
+   ip address 2.2.2.104/32
+   ip ospf area 0.0.0.0
+!
+interface Management1
+   ip address 10.50.50.108/24
+!
+interface Vxlan1
+   vxlan source-interface Loopback0
+   vxlan udp-port 4789
+   vxlan vlan 30 vni 10030
+   vxlan vlan 50 vni 10050
+   vxlan vrf RED vni 50001
+!
+ip route 2.2.2.0/24 Null0
+ip route 10.11.11.0/24 10.50.50.1
+ip route 10.155.155.0/24 10.50.50.1
+!
+ip routing
+ip routing vrf RED
+!
+ip as-path access-list 1 permit ^$ any
+ip prefix-list PL-DEFAULT seq 10 permit 0.0.0.0/0
+ip prefix-list PL-HOSTROUTES seq 10 permit 30.30.30.0/24 eq 32
+ip prefix-list PL-HOSTROUTES seq 20 permit 223.0.0.0/8 eq 32
+ip prefix-list PL-HOSTROUTES seq 500 permit 0.0.0.0/0 le 31
+!
+route-map RM-BGP2OSPF permit 10
+   match ip address prefix-list PL-DEFAULT
+!
+route-map RM-OUT-2-CORE permit 10
+   match ip address prefix-list PL-HOSTROUTES
+   match as-path 1
+!
+router bgp 65200
+   router-id 2.2.2.104
+   no bgp default ipv4-unicast
+   neighbor SPINE-PEERS peer-group
+   neighbor SPINE-PEERS remote-as 65200
+   neighbor SPINE-PEERS update-source Loopback0
+   neighbor SPINE-PEERS send-community extended
+   neighbor SPINE-PEERS maximum-routes 12000 
+   neighbor 2.2.2.201 peer-group SPINE-PEERS
+   neighbor 172.16.3.1 remote-as 500
+   neighbor 172.16.3.1 description CORE VRF:DEFAULT
+   neighbor 172.16.3.1 maximum-routes 12000 
+   !
+   address-family evpn
+      neighbor SPINE-PEERS activate
+   !
+   address-family ipv4
+      neighbor 172.16.3.1 activate
+      network 2.2.2.0/24
+   !
+   vrf RED
+      rd 2.2.2.104:1
+      route-target import 1:1
+      route-target export 1:1
+      neighbor 172.16.1.1 remote-as 500
+      neighbor 172.16.1.1 description CORE VRF:RED
+      neighbor 172.16.1.1 route-map RM-OUT-2-CORE out
+      neighbor 172.16.1.1 maximum-routes 12000 
+      !
+      address-family ipv4
+         neighbor 172.16.1.1 activate
+!
+router ospf 100
+   router-id 2.2.2.104
+   redistribute bgp route-map RM-BGP2OSPF
+   network 2.2.2.0/24 area 0.0.0.0
+   max-lsa 12000
+!
+management api http-commands
+   no shutdown
+!
+end
