@@ -1,0 +1,42 @@
+! device: HostC (vEOS, EOS-4.20.9M)
+!
+! boot system flash:/vEOS-lab-4.20.9M.swi
+!
+transceiver qsfp default-mode 4x10G
+!
+hostname HostC
+ip name-server vrf default 10.50.50.254
+ip domain-name eossandbox.local
+!
+ntp server 10.50.50.254 prefer
+!
+spanning-tree mode mstp
+!
+no aaa root
+!
+username admin privilege 15 role network-admin secret sha512 $6$yc7sj32nd0G1oG/c$0JHUgUm6SK5Lonc7LiLdE9wuI2xw1EKBiOZXuVkSqz6W7QhxZHiwVfWCLtST5Zd7KVH6lkU5ek4NN/wZnoAAt1
+username cvpadmin privilege 15 secret sha512 $6$nQipl9g92G/ufC7I$3kADUR5jCOt3ciTWtQ6EywzSF8kDj.byLpzZ1Xe//8yDUte0YnapTrDTdfLOohq.Dkx0bh2pKEIsC.l5rbae70
+!
+interface Ethernet1
+   description A-LEAF2
+   no switchport
+   ip address 30.30.30.100/24
+!
+interface Ethernet2
+   description A-LEAF3
+   shutdown
+!
+interface Management1
+   ip address 10.50.50.12/24
+   no lldp transmit
+!
+ip route 0.0.0.0/0 30.30.30.1
+ip route 10.11.11.0/24 10.50.50.1
+ip route 10.155.155.0/24 10.50.50.1
+!
+no ip routing
+!
+management api http-commands
+   no shutdown
+!
+end

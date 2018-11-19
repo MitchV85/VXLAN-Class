@@ -1,19 +1,30 @@
-! Command: show running-config
 ! device: A-SPINE1 (vEOS, EOS-4.21.1F)
 !
-! boot system flash:/vEOS-lab.swi
+! boot system flash:/EOS-4.21.1F.swi
+!
+daemon TerminAttr
+   exec /usr/bin/TerminAttr -ingestgrpcurl=10.50.50.240:9910 -taillogs -ingestauth=key,magickey -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default
+   no shutdown
+!
+event-monitor
 !
 transceiver qsfp default-mode 4x10G
 !
 service routing protocols model multi-agent
 !
 hostname A-SPINE1
+ip name-server vrf default 10.50.50.254
+ip domain-name eossandbox.local
 !
-spanning-tree mode mstp
+ntp server 216.239.35.4 prefer
+!
+spanning-tree mode rapid-pvst
 !
 no aaa root
 !
-username arista privilege 15 secret sha512 $6$oORMl5j0619AGMCM$VdmvJAn2C4CWmVZhUixaV/Ss0HVOcr2h6epSQuYLOEq4oetOx8bpWVz.5L2uG2AfxQ8Y7PFQ8UselNBDHQZiZ0
+username admin privilege 15 role network-admin secret sha512 $6$c1LFd1LJ2PzKYjWh$r6KNbMPv67oUHUW4KLFcDYs1GkXnRMAtoSbh8WCYcmR20IzXFWZ3UpAh2aQrJjEqKagJyPQKu/wzEiJy7sBqx1
+username arista privilege 15 secret sha512 $6$psfUBYqD0UGjEPmo$N8uXerR3SL6KNdwm/CvyjO4Ui1K1dxrZG7OWNMx95Iu4u6qg9oBl0gCtFWDMZEZ531SucUeQNikvQMwrlzCP20
+username cvpadmin privilege 15 secret sha512 $6$FL39fqfvF1ooFdLH$NEG0yr6V15GxFpwwdRkTr3DGRwHcox9Lyz2x6RT/iM2hpqR6rlwXfwxvltCHuD6wjrUz7CdZFMWnBPsWJRWgR.
 !
 interface Ethernet1
    description A-LEAF1A
@@ -42,6 +53,7 @@ interface Loopback0
 !
 interface Management1
    ip address 10.50.50.201/24
+   no lldp transmit
 !
 ip route 10.11.11.0/24 10.50.50.1
 ip route 10.155.155.0/24 10.50.50.1

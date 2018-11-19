@@ -1,7 +1,10 @@
-! Command: show running-config
 ! device: A-BL1A (vEOS, EOS-4.21.1F)
 !
-! boot system flash:/vEOS-lab.swi
+! boot system flash:/EOS-4.21.1F.swi
+!
+daemon TerminAttr
+   exec /usr/bin/TerminAttr -ingestgrpcurl=10.50.50.240:9910 -taillogs -ingestauth=key,magickey -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default
+   no shutdown
 !
 switchport default mode routed
 !
@@ -10,12 +13,18 @@ transceiver qsfp default-mode 4x10G
 service routing protocols model multi-agent
 !
 hostname A-BL1A
+ip name-server vrf default 10.50.50.254
+ip domain-name eossandbox.local
 !
-spanning-tree mode mstp
+ntp server 216.239.35.4 prefer
+!
+spanning-tree mode rapid-pvst
 !
 no aaa root
 !
-username arista privilege 15 secret sha512 $6$SZszt..ICak7oZxu$85ILbF3HRdfaZQwJQnSB7g3wV1GczmhbkD/5D1GMM4mdYVmyVekA492MHC4P/hogq0pp5g9iSSE5hTdJusjmd1
+username admin privilege 15 role network-admin secret sha512 $6$cCI0jkJj5s4xXufG$MfHjmH6iGfEq1dQVQrCxl2pF0WYOccrMcTQotNLmlkhhQ4QEPGNTcSGYYvxI0ZIe6II.aXPR4IACpK7pPcBbV1
+username arista privilege 15 secret sha512 $6$vj7z8EiOprRJyRya$wWxhkJHwgM61Zg4ViqdqNjvDveMiUFLuBDtTQEUgVJf7hwW5PYGLGp.glqPiA7kf5NzN4oSPepfBX.DloklMl1
+username cvpadmin privilege 15 secret sha512 $6$Wl6igdF/OtHc1kRc$/ZaGGbrVtZAPnswnUlPHpOR5Pjs15DRtX3.Q7k2V4lmrS4u02pFM6vsWa27SwbTHaeH3hdCQiUI1N49SdktT91
 !
 vrf definition RED
 !
@@ -54,6 +63,10 @@ interface Loopback0
 !
 interface Management1
    ip address 10.50.50.104/24
+   ipv6 enable
+   ipv6 address auto-config
+   ipv6 nd ra rx accept default-route
+   no lldp transmit
 !
 interface Vxlan1
    vxlan source-interface Loopback0

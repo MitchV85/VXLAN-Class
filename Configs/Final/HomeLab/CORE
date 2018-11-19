@@ -1,19 +1,33 @@
-! Command: show running-config
 ! device: CORE (vEOS, EOS-4.21.1F)
 !
-! boot system flash:/vEOS-lab.swi
+! boot system flash:/EOS-4.21.1F.swi
+!
+monitor connectivity
+   host Google
+      ip 172.217.4.228
+      url https://www.google.com
+!
+daemon TerminAttr
+   exec /usr/bin/TerminAttr -ingestgrpcurl=10.50.50.240:9910 -taillogs -ingestauth=key,magickey -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata -ingestexclude=/Sysdb/cell/1/agent,/Sysdb/cell/2/agent -ingestvrf=default
+   no shutdown
 !
 transceiver qsfp default-mode 4x10G
 !
 service routing protocols model multi-agent
 !
 hostname CORE
+ip name-server vrf default 10.50.50.254
+ip domain-name eossandbox.local
 !
-spanning-tree mode mstp
+ntp server 216.239.35.4 prefer
+!
+spanning-tree mode rapid-pvst
 !
 no aaa root
 !
-username arista privilege 15 secret sha512 $6$sympjc3yLCcjzjOE$4trNMqyApGJfyUy.VZJ2vMsGAzL335jBxAaFid8OjfUgHh/OkjSKBCtLveyGzHwt4gnqa9NDw8rLv4TPJIIW./
+username admin privilege 15 role network-admin secret sha512 $6$LoPX.layfdJEmCrb$71czrtsvfE5Nel0vtyTxiN3hMchlm/rmktt3eFSKbRQukiFe/zjIYzU9b1bbNSODpWgrFSsvcP7SoiSk34r7m.
+username arista privilege 15 secret sha512 $6$u7fQMFLSwduhaA5b$c11wtjQkHESsSbAaDMewPRDQW17N0vjlEcNAtb0Quxz4m9r.3gK8X5.8bvAk9Rfu9Q1ouw6DUujG5paw9LHhY/
+username cvpadmin privilege 15 secret sha512 $6$.GRLtnO4ubHUJ0Mi$1hrSfMzx/XuN9cNpLweXnQEUvlrPcjgRzf6qqPkpeb16lxOoAyYSm39WpM8TJTtIhh70U/1YrrzHvfbGNxjIn/
 !
 vrf definition RED
    rd 1:1
@@ -47,9 +61,7 @@ interface Ethernet2.300
    ip address 172.16.3.1/24
 !
 interface Loopback0
-   ip address 1.1.1.200/24
-!
-interface Loopback1
+   ip address 1.1.1.200/32
 !
 interface Loopback100
    ip address 100.100.100.100/32
@@ -60,11 +72,12 @@ interface Loopback200
 !
 interface Management1
    ip address 10.50.50.200/24
+   no lldp transmit
 !
-ip route 0.0.0.0/0 Null0
-ip route vrf RED 0.0.0.0/0 Null0
+ip route 0.0.0.0/0 10.50.50.1
 ip route 10.11.11.0/24 10.50.50.1
 ip route 10.155.155.0/24 10.50.50.1
+ip route vrf RED 0.0.0.0/0 Null0
 !
 ip routing
 ip routing vrf RED

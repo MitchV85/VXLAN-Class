@@ -1,0 +1,35 @@
+! device: HostA (vEOS, EOS-4.20.9M)
+!
+! boot system flash:/vEOS-lab-4.20.9M.swi
+!
+transceiver qsfp default-mode 4x10G
+!
+hostname HostA
+!
+spanning-tree mode mstp
+!
+service running-config timestamp
+!
+no aaa root
+!
+username admin privilege 15 role network-admin secret sha512 $6$zQ66SaZ2Iw4kmauY$oU5SZ7Kh1n35HM5HBXI4k.9mZWKopvCijMrzCfyqdSnSsvC.IL23lqg7MXH0CDJnMYpBf2y9LM2OsNkWNwKyY.
+username cvpadmin privilege 15 secret sha512 $6$rP2JEDG080oCLLQz$ry2O92d1PuTTt3p3WjxCodJM0rEakRvKiwMo0TvKz5tiD3BpjQz4NG9ba8gvjMNuoqOOU6cVpPHR/PXRq.WsY0
+!
+interface Ethernet1
+   no switchport
+   ip address 10.10.10.100/24
+!
+interface Management1
+   ip address 10.50.50.10/24
+   no lldp transmit
+!
+ip route 0.0.0.0/0 10.10.10.1
+ip route 10.11.11.0/24 10.50.50.1
+ip route 10.155.155.0/24 10.50.50.1
+!
+ip routing
+!
+management api http-commands
+   no shutdown
+!
+end

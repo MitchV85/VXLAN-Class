@@ -1,0 +1,35 @@
+! device: HostD (vEOS, EOS-4.20.5F)
+!
+! boot system flash:/vEOS-lab.swi
+!
+transceiver qsfp default-mode 4x10G
+!
+hostname HostD
+ip name-server vrf default 10.50.50.254
+ip domain-name eossandbox.local
+!
+ntp server 10.50.50.254 prefer
+!
+spanning-tree mode mstp
+!
+no aaa root
+!
+username admin privilege 15 role network-admin secret sha512 $6$Bmy.15WKi18vOmMl$aAF/6RMs4601pF1UEkDbttJlR7IZBHXB0jlxUXlxmrlmDNzR9XoqWeMfE6bJ1xva7s4bGZCaWs7L.3HWkMcU40
+username cvpadmin privilege 15 secret sha512 $6$2aIeLbgB15rCruI7$XUHpgLya/myYshqiK/1dIqEF7rJwk2x8F2LrlYtg.HYTxV.siDF4Zu8IY3EN.r7eAwc8qO7HuPDRa14aFqCOd0
+!
+interface Ethernet1
+   description B-LEAF1
+   no switchport
+   ip address 50.50.50.100/24
+!
+interface Management1
+   ip address 10.50.50.13/24
+   no lldp transmit
+!
+ip route 0.0.0.0/0 50.50.50.1
+ip route 10.11.11.0/24 10.50.50.1
+ip route 10.155.155.0/24 10.50.50.1
+!
+no ip routing
+!
+end
