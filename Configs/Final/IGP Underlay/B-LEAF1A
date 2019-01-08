@@ -1,0 +1,103 @@
+! Command: show running-config
+! device: B-LEAF1A (vEOS, EOS-4.21.1F)
+!
+! boot system flash:/vEOS-lab.swi
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname B-LEAF1A
+!
+spanning-tree mode mstp
+!
+no aaa root
+!
+username arista privilege 15 secret sha512 $6$tLDAhJ393rp6mtbB$8IdhpNJZbCq9SL.vRIf9sYkjVR5JmJJ8vAFl9VSEcL8/JR7tv4kh2WMvqqU.hF3npYso4vEE/bBZ3gI731/B.0
+!
+vlan 30,50
+!
+vrf definition RED
+!
+interface Ethernet1
+   description B-SPINE1
+   no switchport
+   ip address 20.101.201.101/24
+   ip ospf network point-to-point
+   ip ospf area 0.0.0.0
+!
+interface Ethernet2
+   description HostD
+   switchport access vlan 50
+   spanning-tree portfast
+!
+interface Loopback0
+   ip address 2.2.2.101/32
+   ip ospf area 0.0.0.0
+!
+interface Loopback223
+   description VRF RED SVI Ping Source
+   vrf forwarding RED
+   ip address 223.2.2.101/32
+!
+interface Management1
+   ip address 192.168.0.105/24
+!
+interface Vlan30
+   no autostate
+   vrf forwarding RED
+   ip address virtual 30.30.30.1/24
+!
+interface Vlan50
+   no autostate
+   vrf forwarding RED
+   ip address virtual 50.50.50.1/24
+!
+interface Vxlan1
+   vxlan source-interface Loopback0
+   vxlan udp-port 4789
+   vxlan vlan 30 vni 10030
+   vxlan vlan 50 vni 10050
+   vxlan vrf RED vni 50001
+!
+ip routing
+ip routing vrf RED
+!
+router bgp 65200
+   router-id 2.2.2.101
+   no bgp default ipv4-unicast
+   neighbor SPINE-PEERS peer-group
+   neighbor SPINE-PEERS remote-as 65200
+   neighbor SPINE-PEERS update-source Loopback0
+   neighbor SPINE-PEERS send-community extended
+   neighbor SPINE-PEERS maximum-routes 12000 
+   neighbor 2.2.2.201 peer-group SPINE-PEERS
+   !
+   vlan 30
+      rd 2.2.2.101:10030
+      route-target both 1:10030
+      redistribute learned
+   !
+   vlan 50
+      rd 2.2.2.101:10050
+      route-target both 1:10050
+      redistribute learned
+   !
+   address-family evpn
+      neighbor SPINE-PEERS activate
+   !
+   vrf RED
+      rd 2.2.2.101:1
+      route-target import 1:1
+      route-target export 1:1
+      redistribute connected
+!
+router ospf 100
+   router-id 2.2.2.101
+   network 2.2.2.0/24 area 0.0.0.0
+   max-lsa 12000
+!
+management api http-commands
+   no shutdown
+!
+end
